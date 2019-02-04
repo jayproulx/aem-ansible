@@ -1,0 +1,26 @@
+# Maps
+- name: Validate environment
+  fail:
+    msg: "aem_env must be one of: prod, or dev, but was '{{ aem_env }}'"
+  when: aem_env != "prod" and aem_env != "dev"
+- debug: msg="Creating Sling Mappings for the {{ aem_env }} environment"
+- name: Clear mappings folder (only one environment should be generated at a time)
+  file:
+    state: absent
+    dest: "{{ map_root }}"
+- name: Create domain mappings
+  include: map.yml
+  with_dict: "{{ domains }}"
+- name: Ensure META-INF/vault exists
+  file:
+    state: directory
+    path: "{{ vault_config_root }}"
+    recurse: yes
+- name: create filter.xml
+  template:
+    src: filter.xml.j2
+    dest: "{{ filter_xml }}"
+- name: Build publish.configuration
+  shell: "mvn clean install -Dproject_key={{ project_key }} -Daem_env={{ aem_env }}"
+  args:
+    chdir: publish.configuration/

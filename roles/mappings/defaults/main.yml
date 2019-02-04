@@ -1,0 +1,8 @@
+prefix: "{{ playbook_dir }}"
+project_key: "myproject"
+ssl: true
+aem_env: "prod"
+jcr_map_root: "/etc/map.publish"
+map_root: "{{ prefix }}/publish.configuration/src/main/content/jcr_root{{ jcr_map_root }}"
+vault_config_root: "{{ prefix }}/publish.configuration/src/main/content/META-INF/vault"
+filter_xml: "{{ vault_config_root }}/filter.xml"

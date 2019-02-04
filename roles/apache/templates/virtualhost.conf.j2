@@ -1,0 +1,107 @@
+<VirtualHost *:8080>
+  ServerName www.{{item.value.host}}
+  ServerAlias {{item.value.host}} {{item.key}}.dev.mycmsdomain.com {{item.key}}.prod.mycmsdomain.com
+
+  # Allow cross origin for fonts (and by extension, svgs)
+  Header always set Access-Control-Allow-Origin * "expr=%{REQUEST_URI} =~ m#\.(ttf|woff|woff2|eot|svg)$#"
+
+  DirectoryIndex en.html
+  DocumentRoot /data/dispatcher/cache/default
+
+  DispatcherConfig {{ dispatcher_config }}
+
+  RewriteEngine on
+  RewriteMap lc int:tolower
+
+  # LogLevel alert rewrite:trace3
+
+  # TODO: In the future, we may want to redirect these to a configured 404 page in AEM
+  RewriteCond %{REQUEST_URI} ^/content
+  {% for assetPath in item.value.assets %}
+  RewriteCond %{REQUEST_URI} !^{{ assetPath }}
+  {% endfor %}
+  RewriteCond %{REQUEST_URI} !^{{item.value.content}}
+  RewriteRule !^$path - [R=404,L,NC]
+
+  # No path, serve homepage
+  RewriteRule ^/$ {{item.value.home}}.html [PT,L]
+
+  # Pass through sitemap.xml requests to {{item.value.home}}.sitemap.xml
+  RewriteRule ^/sitemap.xml$ {{item.value.home}}.sitemap.xml [PT,L]
+
+  # default homepage path, rewrite to / preserving any parameters
+  RewriteCond %{REQUEST_METHOD} =GET
+  RewriteRule ^{{item.value.home}}.html$ /$1 [QSA,L,NE,R=301]
+
+  # Rewrite URL's beginning with {{item.value.home}} so that the URL shortens
+  RewriteCond %{REQUEST_METHOD} =GET
+  RewriteCond %{REQUEST_URI} !^{{item.value.home}}.html
+  RewriteRule ^{{item.value.home}}(.*)$ $1 [L,NE,R=301]
+
+  # Extensionless URLs should be passed through to AEM with an .html extension, "filenames" without dots or URL's ending in /'s
+  # No dots in vanity URL's please
+  # No posting to vanity URL's or extensionless URL's please
+  RewriteCond %{REQUEST_METHOD} =GET
+  RewriteCond %{REQUEST_URI} !^/apps
+  RewriteCond %{REQUEST_URI} !^/bin
+  RewriteCond %{REQUEST_URI} !^/content
+  RewriteCond %{REQUEST_URI} !^/etc
+  RewriteCond %{REQUEST_URI} !^/home
+  RewriteCond %{REQUEST_URI} !^/libs
+  RewriteCond %{REQUEST_URI} !^/tmp
+  RewriteCond %{REQUEST_URI} !^/var
+  RewriteRule /([^\.]*?)/?$ {{item.value.home}}/$1.html [QSA,NE,PT,L]
+
+  # Lowercase all NWHealthy URL's
+  RewriteCond %{REQUEST_METHOD} =GET
+  RewriteRule ^/({{item.value.home}})?[Nn]orthwest[Hh]ealthy(.*)$ ${lc:$1} [PT,NE,L]
+
+  # After shortening all URL's, send the long URL to AEM
+  RewriteCond %{REQUEST_URI} !^/apps
+  RewriteCond %{REQUEST_URI} !^/bin
+  RewriteCond %{REQUEST_URI} !^/content
+  RewriteCond %{REQUEST_URI} !^/etc
+  RewriteCond %{REQUEST_URI} !^/home
+  RewriteCond %{REQUEST_URI} !^/libs
+  RewriteCond %{REQUEST_URI} !^/tmp
+  RewriteCond %{REQUEST_URI} !^/var
+  RewriteRule ^/(.*)$ {{item.value.home}}/$1 [PT,NE,L]
+
+   <Directory /data/dispatcher/cache/default>
+     Require all granted
+
+     AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css image/svg+xml text/javascript application/javascript
+
+     ExpiresActive On
+     ExpiresByType application/json "now"
+     ExpiresByType text/xml "now"
+	 ExpiresDefault "access plus 1 days"
+
+	 SetEnv set-cache-control=false
+     SetEnvIf Mime text/html set-cache-control=html
+     SetEnvIf Mime text/plain set-cache-control=txt
+     SetEnvIf Mime text/xml set-cache-control=xml
+     SetEnvIf Mime text/css set-cache-control=css
+     SetEnvIf Mime text/javascript set-cache-control=js
+     SetEnvIf Mime application/javascript set-cache-control=js
+     SetEnvIf Mime image/gif set-cache-control=image
+     SetEnvIf Mime image/jpeg set-cache-control=image
+     SetEnvIf Mime image/png set-cache-control=image
+     SetEnvIf Mime image/svg+xml set-cache-control=image
+
+	 <If "'${set-cache-control}' != 'false'">
+	   Header unset Cache-Control
+       Header always set Cache-Control "max-age:86400"
+     </If>
+
+     <IfModule disp_apache2.c>
+       SetHandler dispatcher-handler
+       # there's a new trace log level (integer value 4).
+	   # LogLevel alert dispatcher:trace4
+
+       ModMimeUsePathInfo On
+     </IfModule>
+     Options FollowSymLinks
+     AllowOverride None
+   </Directory>
+</VirtualHost>

@@ -1,0 +1,13 @@
+project_key: "myproject"
+flush:
+  - /etc/designs/some-shared-framework
+  - /etc/designs/my-project
+  - /content/my-project
+domains:
+  myproject:
+    host: myproject.org
+    home: /content/my-project/en
+    content: /content/my-project
+    design: /etc/designs/my-project
+    assets:
+      - /content/dam/my-project

@@ -1,0 +1,112 @@
+# Dispatchers
+- name: Ensure sites-dispatcher exists
+  file:
+    state: directory
+    path: "{{ dispatcher_root }}"
+    recurse: yes
+    owner: root
+    group: apache
+    mode: "u=rwx,g=rx"
+- name: Delete old sites-dispatcher-backup
+  file:
+    state: absent
+    path: "{{ dispatcher_backup }}"
+- name: Ensure sites-dispatcher-backup exists
+  file:
+    state: directory
+    path: "{{ dispatcher_backup }}"
+    recurse: yes
+    owner: root
+    group: apache
+    mode: "u=rwx,g=rx"
+- name: Backup previous dispatcher configuration
+  shell: "cp -R {{ dispatcher_root }}/* {{ dispatcher_backup }}/"
+  args:
+    executable: /bin/bash
+- name: create dispatcher configs
+  template:
+    src: dispatcher.any.j2
+    dest: "{{ dispatcher_config }}"
+    owner: root
+    group: apache
+    mode: "u=rwx,g=rx"
+
+# Virtual Hosts
+- name: Ensure sites-enabled exists
+  file:
+    state: directory
+    path: "{{ vhost_root }}"
+    recurse: yes
+    owner: root
+    group: apache
+    mode: "u=rwx,g=rx"
+- name: Delete old sites-enabled-backup
+  file:
+    state: absent
+    path: "{{ vhost_backup }}"
+- name: Ensure sites-enabled-backup exists
+  file:
+    state: directory
+    path: "{{ vhost_backup }}"
+    recurse: yes
+    owner: root
+    group: apache
+    mode: "u=rwx,g=rx"
+- name: Backup previous vhost configuration
+  shell: "cp -R {{ vhost_root }}/* {{ vhost_backup }}/"
+  args:
+    executable: /bin/bash
+- name: Create SSL vhost configs
+  with_dict: "{{ domains }}"
+  when: ssl
+  template:
+    src: "virtualhost-ssl.conf.j2"
+    dest: "{{ vhost_root }}/03-{{item.value.host}}.conf"
+    owner: root
+    group: apache
+    mode: "u=rwx,g=rx"
+- name: Create non-SSL vhost configs
+  with_dict: "{{ domains }}"
+  when: ssl != true
+  template:
+    src: "virtualhost.conf.j2"
+    dest: "{{ vhost_root }}/03-{{item.value.host}}.conf"
+    owner: root
+    group: apache
+    mode: "u=rwx,g=rx"
+
+# Restart Apache
+- block:
+  - name: Restart Apache
+    service: name=httpd state=restarted
+    register: apache_restart
+  rescue:
+    - name: Get cause
+      shell: "systemctl status httpd.service"
+      register: cause
+      ignore_errors: yes
+      args:
+        executable: /bin/bash
+    - debug: var=cause.stdout_lines
+    - name: Remove new dispatcher config
+      file:
+        dest: "{{ dispatcher_config }}"
+        state: absent
+    - name: Remove new vhost configs
+      with_dict: "{{ domains }}"
+      file:
+        dest: "{{ vhost_root }}/{{ project_key }}-{{item.value.host}}.conf"
+        state: absent
+    - name: Restore dispatcher configurations
+      register: stdout
+      shell: "cp -R {{ dispatcher_backup }}/* {{ dispatcher_root }}/"
+      args:
+        executable: /bin/bash
+    - name: Restore vhost configurations
+      shell: "cp -R {{ vhost_backup }}/* {{ vhost_root }}/"
+      args:
+        executable: /bin/bash
+    - name: Try to Restart Apache again
+      service: name=httpd state=restarted
+
+

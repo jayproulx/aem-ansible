@@ -1,0 +1,24 @@
+[dispatcher]
+10.1.1.2  # client-dev-publish1-dispatch
+
+[publish]
+10.1.1.3  dispatcher=10.1.1.2 # client-dev-publish1
+
+[author-dispatcher]
+10.1.1.4   # client-dev-author1-dispatch
+10.1.1.5  # client-dev-author2-dispatch
+
+[author]
+10.1.1.6   dispatcher=10.1.1.4 # client-dev-author1
+
+[standby]
+10.1.1.7  dispatcher=10.1.1.5 # client-dev-author2
+
+[aem:children]
+author
+standby
+publish
+
+[apache:children]
+dispatcher
+author-dispatcher

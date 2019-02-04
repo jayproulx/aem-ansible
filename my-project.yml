@@ -1,0 +1,20 @@
+- name: My Project Dispatcher Configuration
+  hosts: dispatcher
+  become: true
+  vars:
+    ssl: false
+    aem_env: dev
+  vars_files:
+    - domains.yml
+  roles:
+    - apache
+#- name: My Project Mappings configuration
+#  hosts: localhost
+#  connection: local
+#  vars:
+#    ssl: false
+#    aem_env: dev
+#  vars_files:
+#    - domains.yml
+#  roles:
+#    - mappings

@@ -1,0 +1,9 @@
+prefix: ""
+# always override this to prevent overwriting configs from another project if you forget.
+project_key: "myproject"
+ssl: true
+dispatcher_root: "{{ prefix }}/etc/httpd/sites-dispatcher"
+dispatcher_backup: "{{ prefix }}/etc/httpd/sites-dispatcher-backup"
+vhost_root: "{{ prefix }}/etc/httpd/sites-enabled"
+vhost_backup: "{{ prefix }}/etc/httpd/sites-enabled-backup"
+dispatcher_config: "{{ dispatcher_root }}/myproject.org.any"

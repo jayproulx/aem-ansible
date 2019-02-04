@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workspaceFilter version="1.0">
+{% for domain in domains %}
+	{% if aem_env == 'prod' %}
+		{% set host %}www.{{domains[domain].host}}{% endset %}
+	{% else %}
+		{% set host %}{{ domain }}.{{ aem_env }}.mycmsdomain.com{% endset %}
+	{% endif %}
+    <filter root="{{ jcr_map_root }}/{{ (ssl == true) | ternary('https', 'http') }}/{{ host }}"/>
+{% endfor %}
+</workspaceFilter>

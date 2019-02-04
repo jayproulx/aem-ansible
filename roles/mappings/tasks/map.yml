@@ -1,0 +1,30 @@
+- set_fact:
+    key: "{{ item.key }}"
+    domain: "{{ item.value }}"
+
+- set_fact:
+    host: "www.{{ domain.host }}"
+  when: aem_env == 'prod'
+
+- set_fact:
+    host: "{{ key }}.{{ aem_env }}.mycmsdomain.com"
+  when: aem_env != 'prod'
+
+- set_fact:
+    host_path: "{{ map_root }}/{{ (ssl == true) | ternary('https', 'http') }}/{{ host }}"
+
+- debug:
+    msg: "{{ host_path }}"
+
+- file:
+    state: directory
+    recurse: yes
+    path: "{{ host_path }}/redirect"
+
+- template:
+    src: home.content.xml.j2
+    dest: "{{ host_path }}/.content.xml"
+
+- template:
+    src: redirect.content.xml.j2
+    dest: "{{ host_path }}/redirect/.content.xml"

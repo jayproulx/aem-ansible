@@ -1,0 +1,20 @@
+- hosts: publish
+  tasks:
+    - name: Flush dispatcher cache from publish servers
+      shell: >
+        curl -s -X POST http://{{dispatcher}}:8080/dispatcher/invalidate.cache\
+           -H 'CQ-Action: Delete'\
+           -H 'CQ-Handle: /content/my-project'\
+           -H 'Content-Length: 0'    
+    - name: Flush dispatcher cache from publish servers
+      shell: >
+        curl -s -X POST http://{{dispatcher}}:8080/dispatcher/invalidate.cache\
+           -H 'CQ-Action: Delete'\
+           -H 'CQ-Handle: /etc/designs/my-project'\
+           -H 'Content-Length: 0'
+    - name: Flush dispatcher cache from publish servers
+      shell: >
+        curl -s -X POST http://{{dispatcher}}:8080/dispatcher/invalidate.cache\
+           -H 'CQ-Action: Delete'\
+           -H 'CQ-Handle: /etc/designs/some-shared-framework'\
+           -H 'Content-Length: 0'
